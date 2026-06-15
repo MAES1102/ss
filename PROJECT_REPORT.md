@@ -2,19 +2,12 @@
 
 ---
 
-**Project Code:** SEC-PRJ-7E_25
-
 **Project Title:** Fake Data Prevention with Conventional Cryptographic Tools
 
 **Course:** System Security
 
-**Student Name:** [Student Name]
+**Student Name:** [Yermek Aubayev]
 
-**University:** [University Name]
-
-**Instructor:** [Instructor Name]
-
-**Date:** June 2026
 
 ---
 

@@ -3,330 +3,1125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fake Data Prevention Demo</title>
+  <title>Fake Data Prevention — Security Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ── Reset & base ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg:          #0A0F1A;
+      --panel:       #111827;
+      --panel-alt:   #0D1421;
+      --border:      #1F2937;
+      --border-hi:   #374151;
+      --primary:     #00D4FF;
+      --primary-dim: rgba(0,212,255,0.10);
+      --success:     #10B981;
+      --success-dim: rgba(16,185,129,0.10);
+      --danger:      #EF4444;
+      --danger-dim:  rgba(239,68,68,0.10);
+      --warning:     #F59E0B;
+      --warning-dim: rgba(245,158,11,0.10);
+      --text:        #E5E7EB;
+      --muted:       #94A3B8;
+      --muted2:      #4B5563;
+    }
+
+    html { height: 100%; overflow: hidden; }
+
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0d1117;
-      color: #e0e0e0;
-      min-height: 100vh;
-      padding: 24px;
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 1.6rem;
-      color: #ffd60a;
-      margin-bottom: 4px;
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
     }
 
-    .subtitle {
-      text-align: center;
-      font-size: 0.9rem;
-      color: #888;
-      margin-bottom: 28px;
-    }
+    .topbar, .app-shell { position: relative; z-index: 1; }
 
-    /* ── Layout ───────────────────────────────────────────── */
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+    * { scrollbar-width: thin; scrollbar-color: var(--border-hi) transparent; }
 
-    @media (max-width: 700px) {
-      .container { grid-template-columns: 1fr; }
-    }
-
-    /* ── Cards ────────────────────────────────────────────── */
-    .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      padding: 20px;
-    }
-
-    .card h2 {
-      font-size: 1rem;
-      margin-bottom: 14px;
+    /* ── TOP BAR ── */
+    .topbar {
+      height: 52px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .badge {
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-weight: 700;
-    }
-    .badge-danger  { background: #3d1c1c; color: #ff7b7b; border: 1px solid #ff4444; }
-    .badge-success { background: #1c3d2a; color: #7bffaa; border: 1px solid #2ea043; }
-    .badge-info    { background: #1c2d3d; color: #7bb9ff; border: 1px solid #388bfd; }
-
-    /* ── Buttons ──────────────────────────────────────────── */
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 10px 16px;
-      margin-bottom: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity .15s, transform .1s;
-    }
-    .btn:hover  { opacity: .85; }
-    .btn:active { transform: scale(.98); }
-
-    .btn-login    { background: #388bfd; color: #fff; }
-    .btn-insecure { background: #da3633; color: #fff; }
-    .btn-attack   { background: #b94e00; color: #fff; }
-    .btn-secure   { background: #2ea043; color: #fff; }
-    .btn-tamper   { background: #9333ea; color: #fff; }
-    .btn-replay   { background: #0f766e; color: #fff; }
-    .btn-clear    { background: #30363d; color: #aaa; margin-top: 4px; }
-
-    .btn-description {
-      font-size: 0.77rem;
-      color: #777;
-      margin: -6px 0 10px 0;
-      padding-left: 4px;
-    }
-
-    /* ── Token display ────────────────────────────────────── */
-    #token-display {
-      font-size: 0.75rem;
-      color: #555;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-bottom: 12px;
-      word-break: break-all;
-      min-height: 36px;
-    }
-
-    /* ── Log panel ────────────────────────────────────────── */
-    .log-card {
-      grid-column: 1 / -1;
-    }
-
-    #log {
-      background: #010409;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      padding: 14px;
-      height: 340px;
-      overflow-y: auto;
-      font-family: 'Consolas', 'Fira Code', monospace;
-      font-size: 0.82rem;
-      line-height: 1.55;
-    }
-
-    /* ── Theory section ───────────────────────────────────── */
-    .theory {
-      grid-column: 1 / -1;
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      padding: 20px;
-    }
-
-    .theory h2 {
-      color: #ffd60a;
-      margin-bottom: 14px;
-      font-size: 1rem;
-    }
-
-    .theory-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      padding: 0 20px;
+      flex-shrink: 0;
       gap: 16px;
     }
 
-    .theory-item {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 14px;
-    }
-
-    .theory-item h3 {
-      font-size: 0.88rem;
-      color: #ffd60a;
-      margin-bottom: 6px;
-    }
-
-    .theory-item p {
-      font-size: 0.8rem;
-      color: #9e9e9e;
-      line-height: 1.5;
-    }
-
-    /* ── Flow diagram ─────────────────────────────────────── */
-    .flow {
+    .topbar-brand {
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-      font-size: 0.8rem;
+      gap: 10px;
+      min-width: 220px;
     }
-    .flow-step {
-      background: #1c2d3d;
-      border: 1px solid #388bfd44;
-      border-radius: 6px;
-      padding: 6px 10px;
-      color: #7bb9ff;
-    }
-    .flow-arrow { color: #555; }
 
-    hr { border-color: #30363d; margin: 16px 0; }
+    .brand-icon {
+      width: 28px; height: 28px;
+      background: var(--primary-dim);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .topbar-indicators {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .ind-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+
+    .ind-online { background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,0.5); animation: softPulse 2.5s ease-in-out infinite; }
+    .ind-active { background: var(--primary); box-shadow: 0 0 6px rgba(0,212,255,0.5); animation: softPulse 2.5s ease-in-out infinite 0.8s; }
+    .ind-ready  { background: var(--border-hi); }
+
+    .topbar-meta {
+      min-width: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .meta-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── APP SHELL ── */
+    .app-shell {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 268px;
+      min-width: 268px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 14px 10px 20px;
+    }
+
+    .sb-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 8px 5px;
+    }
+
+    .sb-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    #token-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted2);
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 7px 10px;
+      margin: 0 2px 8px;
+      word-break: break-all;
+      line-height: 1.5;
+      min-height: 34px;
+      transition: color 0.3s, border-color 0.3s;
+    }
+
+    /* ── ACTION TILES ── */
+    .action-tile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 5px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border-hi);
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      transition: background 0.18s, border-color 0.18s;
+    }
+
+    .action-tile:hover  { background: rgba(255,255,255,0.03); border-color: var(--border-hi); }
+    .action-tile:active { transform: scale(0.99); }
+
+    .tile-auth    { border-left-color: var(--primary); }
+    .tile-auth:hover  { border-left-color: var(--primary); background: var(--primary-dim); }
+
+    .tile-attack  { border-left-color: var(--danger); }
+    .tile-attack:hover  { border-left-color: var(--danger); background: var(--danger-dim); }
+
+    .tile-defense { border-left-color: var(--success); }
+    .tile-defense:hover { border-left-color: var(--success); background: var(--success-dim); }
+
+    .tile-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .tile-auth   .tile-icon { background: var(--primary-dim); }
+    .tile-attack .tile-icon { background: var(--danger-dim); }
+    .tile-defense .tile-icon { background: var(--success-dim); }
+
+    .tile-body   { flex: 1; min-width: 0; }
+    .tile-id     { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted2); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+    .tile-title  { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.3; margin-top: 1px; }
+    .tile-desc   { font-size: 10px; color: var(--muted); margin-top: 1px; line-height: 1.3; }
+
+    .tile-state  { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+    .tile-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--muted2); transition: background 0.3s, box-shadow 0.3s; }
+    .tile-status { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: var(--muted2); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; transition: color 0.3s; }
+
+    .action-tile.t-running  { border-left-color: var(--warning) !important; }
+    .action-tile.t-running  .tile-dot { background: var(--warning); box-shadow: 0 0 5px rgba(245,158,11,0.7); animation: softPulse 0.8s ease-in-out infinite; }
+    .action-tile.t-running  .tile-status { color: var(--warning); }
+    .action-tile.t-accepted .tile-dot { background: var(--success); box-shadow: 0 0 5px rgba(16,185,129,0.5); }
+    .action-tile.t-accepted .tile-status { color: var(--success); }
+    .action-tile.t-rejected .tile-dot { background: var(--danger); box-shadow: 0 0 5px rgba(239,68,68,0.5); }
+    .action-tile.t-rejected .tile-status { color: var(--danger); }
+
+    #btn-clear {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: calc(100% - 4px);
+      margin: 6px 2px 0;
+      padding: 8px 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted2);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    #btn-clear:hover { border-color: var(--border-hi); color: var(--text); background: var(--panel-alt); }
+
+    /* ── MAIN CONTENT ── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 18px 20px 24px;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    /* ── CONSOLE PANEL ── */
+    .console-panel {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .console-live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(16,185,129,0.5);
+      animation: softPulse 2.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .console-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      color: var(--text);
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .console-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 2px 8px;
+    }
+
+    #log {
+      padding: 14px 16px 10px;
+      height: 460px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      background: var(--panel-alt);
+    }
+
+    #log > div { animation: logSlide 0.15s ease both; }
+
+    /* ── BOTTOM ROW ── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── RESULT PANEL ── */
+    .result-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      transition: border-color 0.4s ease, background 0.4s ease;
+      min-height: 154px;
+    }
+
+    .result-panel.st-success { border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.05); }
+    .result-panel.st-danger  { border-color: rgba(239,68,68,0.35);  background: rgba(239,68,68,0.05);  }
+    .result-panel.st-warning { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.05); }
+
+    .result-glyph { font-size: 30px; line-height: 1; }
+    .result-label {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--muted);
+      transition: color 0.4s;
+    }
+    .result-panel.st-success .result-label { color: var(--success); }
+    .result-panel.st-danger  .result-label { color: var(--danger); }
+    .result-panel.st-warning .result-label { color: var(--warning); }
+    .result-detail { font-size: 10px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── PIPELINE PANEL ── */
+    .pipeline-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px 18px;
+    }
+
+    .pipeline-header {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--muted2); text-transform: uppercase; margin-bottom: 18px;
+    }
+
+    .pipeline-stages {
+      display: flex;
+      align-items: center;
+    }
+
+    .pipe-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      min-width: 64px;
+    }
+
+    .pipe-dot {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--border-hi);
+      background: var(--panel-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--muted2);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pipe-lbl {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.05em;
+      color: var(--muted2); text-transform: uppercase;
+      text-align: center; font-family: 'JetBrains Mono', monospace;
+      transition: color 0.3s;
+      white-space: nowrap;
+    }
+
+    .pipe-conn {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin-bottom: 24px;
+      transition: background 0.3s;
+    }
+
+    .pipe-stage.ps-checking .pipe-dot { border-color: var(--warning); background: var(--warning-dim); color: var(--warning); animation: softPulse 0.8s ease-in-out infinite; }
+    .pipe-stage.ps-checking .pipe-lbl { color: var(--warning); }
+    .pipe-stage.ps-pass     .pipe-dot { border-color: var(--success); background: var(--success-dim); color: var(--success); }
+    .pipe-stage.ps-pass     .pipe-lbl { color: var(--success); }
+    .pipe-stage.ps-fail     .pipe-dot { border-color: var(--danger);  background: var(--danger-dim);  color: var(--danger); }
+    .pipe-stage.ps-fail     .pipe-lbl { color: var(--danger); }
+    .pipe-conn.pc-pass { background: var(--success); }
+    .pipe-conn.pc-fail { background: var(--danger); }
+
+    /* ── TABS ── */
+    .tabs-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .tabs-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-alt);
+    }
+
+    .tab-btn {
+      padding: 10px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; font-weight: 600;
+      color: var(--muted); background: transparent;
+      border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab-btn:hover  { color: var(--text); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tab-pane { display: none; padding: 18px 20px; }
+    .tab-pane.active { display: block; }
+
+    /* Demo tab */
+    .demo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+    .demo-card {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .dc-id    { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted2); text-transform: uppercase; margin-bottom: 3px; }
+    .dc-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+    .dc-res   { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .dc-ok    { color: var(--success); }
+    .dc-fail  { color: var(--danger); }
+    .dc-warn  { color: var(--warning); }
+
+    /* Architecture tab */
+    .flow-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+    .flow-node {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 7px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--muted);
+      transition: border-color 0.2s, color 0.2s;
+      cursor: default;
+    }
+    .flow-node:hover { border-color: var(--primary); color: var(--text); }
+    .flow-node.fn-final { border-color: rgba(16,185,129,0.4); color: var(--success); background: var(--success-dim); }
+    .flow-arrow { color: var(--muted2); font-size: 12px; }
+
+    /* Theory tab */
+    .theory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+    .theory-card {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      transition: border-color 0.2s;
+    }
+    .theory-card:hover { border-color: var(--border-hi); }
+
+    .theory-card h3 { font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .theory-card p  { font-size: 11px; color: var(--muted); line-height: 1.65; }
+    .theory-card p code   { font-family: 'JetBrains Mono', monospace; color: var(--warning); background: var(--warning-dim); padding: 1px 4px; border-radius: 3px; font-size: 10px; }
+    .theory-card p strong { color: var(--text); font-weight: 600; }
+
+    /* ── Keyframes ── */
+    @keyframes softPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.45; }
+    }
+
+    @keyframes logSlide {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes resultPop {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .app-shell { animation: fadeIn 0.3s ease; }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      html, body { overflow: auto; }
+      .app-shell  { flex-direction: column; overflow: visible; }
+      .sidebar    { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
+      .bottom-row { grid-template-columns: 1fr; }
+      .demo-grid, .theory-grid { grid-template-columns: 1fr 1fr; }
+    }
+
   </style>
 </head>
 <body>
 
-<h1>Fake Data Prevention Demo</h1>
-<p class="subtitle">SEC-PRJ-7E_25 · RSA-2048 Digital Signatures · AES-256-GCM Encryption · JWT Authentication · TLS · Replay Protection</p>
+<canvas id="bg-canvas"></canvas>
 
-<div class="container">
-
-  <!-- ── Step 0: Login ──────────────────────────────────── -->
-  <div class="card">
-    <h2>Step 0 — Authentication <span class="badge badge-info">JWT</span></h2>
-
-    <p id="token-display">No token yet — click Login first.</p>
-
-    <button class="btn btn-login" id="btn-login">Authenticate (demo / password123)</button>
-    <p class="btn-description">Verifies credentials via bcrypt comparison. Server issues a signed JWT (HS256) required for all protected endpoints.</p>
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">⬡</div>
+    <span class="brand-name">Data Prevention Center</span>
   </div>
-
-  <!-- ── Vulnerable vs Secure ───────────────────────────── -->
-  <div class="card">
-    <h2>Vulnerable System <span class="badge badge-danger">NO PROTECTION</span></h2>
-
-    <button class="btn btn-insecure" id="btn-insecure">
-      1 · Send normal data (insecure)
-    </button>
-    <p class="btn-description">Sends { amount: 100 } — server accepts without any check.</p>
-
-    <button class="btn btn-attack" id="btn-tamper-insecure">
-      2 · Tamper data and send (attack)
-    </button>
-    <p class="btn-description">Sends { amount: 99999 } — server accepts without verification. Demonstrates the absence of integrity controls.</p>
+  <div class="topbar-indicators">
+    <div class="indicator"><span class="ind-dot ind-active"></span><span>JWT</span></div>
+    <div class="indicator"><span class="ind-dot ind-online"></span><span>TLS</span></div>
+    <div class="indicator"><span class="ind-dot ind-ready" id="ind-rsa"></span><span>RSA</span></div>
+    <div class="indicator"><span class="ind-dot ind-ready" id="ind-aes"></span><span>AES</span></div>
+    <div class="indicator"><span class="ind-dot ind-ready" id="ind-nonce"></span><span>Nonce</span></div>
   </div>
-
-  <div class="card">
-    <h2>Secure System <span class="badge badge-success">CRYPTOGRAPHY</span></h2>
-
-    <button class="btn btn-secure" id="btn-secure">
-      3 · Send secure data (signed + encrypted)
-    </button>
-    <p class="btn-description">JWT + AES-256-GCM encryption + RSA signature. Server verifies all three.</p>
-
-    <button class="btn btn-tamper" id="btn-tamper-signed">
-      4 · Tamper signed data (rejected)
-    </button>
-    <p class="btn-description">Modifies the payload but reuses the original RSA signature — signature verification fails and the server rejects the request.</p>
-
-    <button class="btn btn-replay" id="btn-replay">
-      5 · Replay valid request (rejected)
-    </button>
-    <p class="btn-description">Retransmits Scenario 3’s exact payload — server rejects because the nonce has already been recorded.</p>
+  <div class="topbar-meta">
+    <span class="meta-badge">SEC-PRJ-7E_25</span>
   </div>
+</header>
 
-  <!-- ── Log output ──────────────────────────────────────── -->
-  <div class="card log-card">
-    <h2>Live Demo Log
-      <button class="btn btn-clear" id="btn-clear" style="width:auto;padding:4px 12px;margin:0;float:right;">Clear</button>
-    </h2>
-    <div id="log">
-      <div style="color:#555">Waiting for demo actions…</div>
+<!-- APP SHELL -->
+<div class="app-shell">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="sb-label">Authentication</div>
+    <p id="token-display">No token — login required</p>
+    <button class="action-tile tile-auth" id="btn-login">
+      <div class="tile-icon">🔑</div>
+      <div class="tile-body">
+        <div class="tile-id">AUTH-01</div>
+        <div class="tile-title">Authenticate</div>
+        <div class="tile-desc">demo / password123 · JWT (HS256)</div>
+      </div>
+      <div class="tile-state">
+        <span class="tile-dot"></span>
+        <span class="tile-status">Ready</span>
+      </div>
+    </button>
+
+    <div class="sb-divider"></div>
+    <div class="sb-label">Attack Surface</div>
+
+    <button class="action-tile tile-attack" id="btn-insecure">
+      <div class="tile-icon">⚡</div>
+      <div class="tile-body">
+        <div class="tile-id">SCN-01</div>
+        <div class="tile-title">Send Insecure Data</div>
+        <div class="tile-desc">No auth · No integrity check</div>
+      </div>
+      <div class="tile-state">
+        <span class="tile-dot"></span>
+        <span class="tile-status">Ready</span>
+      </div>
+    </button>
+
+    <button class="action-tile tile-attack" id="btn-tamper-insecure">
+      <div class="tile-icon">⚠</div>
+      <div class="tile-body">
+        <div class="tile-id">SCN-02</div>
+        <div class="tile-title">Tamper &amp; Send</div>
+        <div class="tile-desc">Modify amount field · Attack</div>
+      </div>
+      <div class="tile-state">
+        <span class="tile-dot"></span>
+        <span class="tile-status">Ready</span>
+      </div>
+    </button>
+
+    <div class="sb-divider"></div>
+    <div class="sb-label">Defense Layer</div>
+
+    <button class="action-tile tile-defense" id="btn-secure">
+      <div class="tile-icon">🔒</div>
+      <div class="tile-body">
+        <div class="tile-id">SCN-03</div>
+        <div class="tile-title">Send Secure Data</div>
+        <div class="tile-desc">JWT + AES-256-GCM + RSA + Nonce</div>
+      </div>
+      <div class="tile-state">
+        <span class="tile-dot"></span>
+        <span class="tile-status">Ready</span>
+      </div>
+    </button>
+
+    <button class="action-tile tile-defense" id="btn-tamper-signed">
+      <div class="tile-icon">🔍</div>
+      <div class="tile-body">
+        <div class="tile-id">SCN-04</div>
+        <div class="tile-title">Tamper Signed Payload</div>
+        <div class="tile-desc">Signature mismatch · Rejected</div>
+      </div>
+      <div class="tile-state">
+        <span class="tile-dot"></span>
+        <span class="tile-status">Ready</span>
+      </div>
+    </button>
+
+    <button class="action-tile tile-defense" id="btn-replay">
+      <div class="tile-icon">↩</div>
+      <div class="tile-body">
+        <div class="tile-id">SCN-05</div>
+        <div class="tile-title">Replay Valid Request</div>
+        <div class="tile-desc">Nonce reuse · Replay detected</div>
+      </div>
+      <div class="tile-state">
+        <span class="tile-dot"></span>
+        <span class="tile-status">Ready</span>
+      </div>
+    </button>
+
+    <div class="sb-divider"></div>
+    <button id="btn-clear">↺ &nbsp;Clear Console</button>
+
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <!-- LIVE SECURITY CONSOLE -->
+    <div class="console-panel">
+      <div class="console-header">
+        <span class="console-live-dot"></span>
+        <span class="console-title">Live Security Console</span>
+        <span class="console-chip" id="event-count">0 events</span>
+        <span class="console-chip" id="console-time">--:--:--</span>
+      </div>
+      <div id="log">
+        <div style="color:#4B5563">Initializing security monitoring… waiting for events.</div>
+      </div>
     </div>
-  </div>
 
-  <!-- ── Theory ─────────────────────────────────────────── -->
-  <div class="theory">
-    <h2>How the Protection Works</h2>
-    <div class="theory-grid">
+    <!-- RESULT + PIPELINE -->
+    <div class="bottom-row">
 
-      <div class="theory-item">
-        <h3>The Problem: Fake Data</h3>
-        <p>Without validation, any client can send arbitrary JSON.
-           An attacker can change <code>amount: 100</code> to <code>amount: 99999</code>
-           and the server has no way to detect it.</p>
+      <!-- RESULT PANEL -->
+      <div class="result-panel" id="result-panel">
+        <div class="result-glyph" id="result-glyph">◌</div>
+        <div class="result-label" id="result-label">AWAITING EVENT</div>
+        <div class="result-detail" id="result-detail">Run a scenario to see results</div>
       </div>
 
-      <div class="theory-item">
-        <h3>Digital Signature (RSA)</h3>
-        <p>The sender hashes the data and encrypts the hash with a <strong>private key</strong>.
-           The server verifies using the <strong>public key</strong>.
-           Any modification — even one bit — produces a different hash → signature fails.</p>
+      <!-- PIPELINE -->
+      <div class="pipeline-panel">
+        <div class="pipeline-header">Request Verification Pipeline</div>
+        <div class="pipeline-stages">
+          <div class="pipe-stage" id="pipe-jwt">
+            <div class="pipe-dot">—</div>
+            <div class="pipe-lbl">JWT</div>
+          </div>
+          <div class="pipe-conn" id="conn-1"></div>
+          <div class="pipe-stage" id="pipe-aes">
+            <div class="pipe-dot">—</div>
+            <div class="pipe-lbl">AES-GCM</div>
+          </div>
+          <div class="pipe-conn" id="conn-2"></div>
+          <div class="pipe-stage" id="pipe-rsa">
+            <div class="pipe-dot">—</div>
+            <div class="pipe-lbl">RSA Sig</div>
+          </div>
+          <div class="pipe-conn" id="conn-3"></div>
+          <div class="pipe-stage" id="pipe-nonce">
+            <div class="pipe-dot">—</div>
+            <div class="pipe-lbl">Nonce</div>
+          </div>
+          <div class="pipe-conn" id="conn-4"></div>
+          <div class="pipe-stage" id="pipe-verdict">
+            <div class="pipe-dot">—</div>
+            <div class="pipe-lbl">Verdict</div>
+          </div>
+        </div>
       </div>
 
-      <div class="theory-item">
-        <h3>Encryption (AES-256-GCM)</h3>
-        <p>Data is encrypted so it is unreadable in transit.
-           GCM mode also produces an <strong>auth tag</strong> — if ciphertext is tampered,
-           decryption throws an error before the data reaches application logic.</p>
+    </div><!-- /.bottom-row -->
+
+    <!-- TABS -->
+    <div class="tabs-panel">
+      <nav class="tabs-nav">
+        <button class="tab-btn active" data-tab="demo">Demo</button>
+        <button class="tab-btn" data-tab="architecture">Architecture</button>
+        <button class="tab-btn" data-tab="theory">Theory</button>
+      </nav>
+
+      <!-- DEMO TAB -->
+      <div class="tab-pane active" id="tab-demo">
+        <div class="demo-grid">
+          <div class="demo-card">
+            <div class="dc-id">AUTH-01</div>
+            <div class="dc-title">Authenticate</div>
+            <div class="dc-res dc-ok">▶ JWT Issued</div>
+          </div>
+          <div class="demo-card">
+            <div class="dc-id">SCN-01</div>
+            <div class="dc-title">Send Insecure Data</div>
+            <div class="dc-res dc-warn">⚠ Accepted Without Check</div>
+          </div>
+          <div class="demo-card">
+            <div class="dc-id">SCN-02</div>
+            <div class="dc-title">Tamper &amp; Send</div>
+            <div class="dc-res dc-warn">⚠ Attack Succeeds</div>
+          </div>
+          <div class="demo-card">
+            <div class="dc-id">SCN-03</div>
+            <div class="dc-title">Send Secure Data</div>
+            <div class="dc-res dc-ok">✓ All Checks Pass</div>
+          </div>
+          <div class="demo-card">
+            <div class="dc-id">SCN-04</div>
+            <div class="dc-title">Tamper Signed Payload</div>
+            <div class="dc-res dc-fail">✗ Signature Invalid</div>
+          </div>
+          <div class="demo-card">
+            <div class="dc-id">SCN-05</div>
+            <div class="dc-title">Replay Valid Request</div>
+            <div class="dc-res dc-fail">✗ Replay Detected</div>
+          </div>
+        </div>
       </div>
 
-      <div class="theory-item">
-        <h3>JWT Authentication</h3>
-        <p>A JSON Web Token is a signed credential.
-           The server issues it on login; every protected request must carry it.
-           Expired, forged, or modified tokens are rejected at the middleware layer.</p>
+      <!-- ARCHITECTURE TAB -->
+      <div class="tab-pane" id="tab-architecture">
+        <div class="flow-row">
+          <div class="flow-node">1. Login → JWT</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">2. Sign (RSA-2048 private key)</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">3. Encrypt (AES-256-GCM)</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">4. POST /send-secure + Bearer JWT</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">5. Server: verify JWT</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">6. Server: AES-256-GCM decrypt</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">7. Server: verify RSA signature</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">8. Server: verify nonce</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node fn-final">ACCEPT / REJECT</div>
+        </div>
       </div>
 
-      <div class="theory-item">
-        <h3>TLS Certificate (HTTPS)</h3>
-        <p>This server runs over HTTPS using a self-signed X.509 certificate (RSA-2048).
-           TLS encrypts the transport channel, preventing passive eavesdropping of JWTs
-           and session data. All application-layer cryptography depends on this foundation.</p>
+      <!-- THEORY TAB -->
+      <div class="tab-pane" id="tab-theory">
+        <div class="theory-grid">
+          <div class="theory-card">
+            <h3>The Problem: Fake Data</h3>
+            <p>Without validation, any client can send arbitrary JSON.
+               An attacker can change <code>amount: 100</code> to <code>amount: 99999</code>
+               and the server has no way to detect it.</p>
+          </div>
+          <div class="theory-card">
+            <h3>Digital Signature (RSA)</h3>
+            <p>The sender hashes the data and encrypts the hash with a <strong>private key</strong>.
+               The server verifies using the <strong>public key</strong>.
+               Any modification — even one bit — produces a different hash → signature fails.</p>
+          </div>
+          <div class="theory-card">
+            <h3>Encryption (AES-256-GCM)</h3>
+            <p>Data is encrypted so it is unreadable in transit. GCM mode also produces an
+               <strong>authentication tag</strong> — if ciphertext is tampered, decryption
+               throws an error before data reaches application logic.</p>
+          </div>
+          <div class="theory-card">
+            <h3>JWT Authentication</h3>
+            <p>A JSON Web Token is a signed credential. The server issues it on login;
+               every protected request must carry it. Expired, forged, or modified tokens
+               are rejected at the middleware layer.</p>
+          </div>
+          <div class="theory-card">
+            <h3>TLS Certificate (HTTPS)</h3>
+            <p>This server runs over HTTPS with a self-signed X.509 certificate (RSA-2048).
+               TLS encrypts the transport channel, preventing passive eavesdropping of JWTs
+               and session data.</p>
+          </div>
+          <div class="theory-card">
+            <h3>Replay Protection (Nonce)</h3>
+            <p>Each secure payload includes a UUID nonce embedded inside the signed and
+               encrypted body. The server records accepted nonces and rejects duplicates,
+               preventing retransmission of previously valid captured requests.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="theory-item">
-        <h3>Replay Protection (Nonce)</h3>
-        <p>Each secure payload includes a UUID nonce embedded inside the signed and
-           encrypted body. The server records accepted nonces and rejects duplicates,
-           preventing retransmission of a previously valid captured request.</p>
-      </div>
+    </div><!-- /.tabs-panel -->
 
-    </div>
-
-    <hr />
-
-    <p style="font-size:.82rem;color:#666;margin-bottom:8px;"><strong style="color:#aaa">Secure Request Flow</strong></p>
-    <div class="flow">
-      <div class="flow-step">1. Login → JWT</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">2. Sign data (RSA private key)</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">3. Encrypt data (AES-256-GCM)</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">4. POST /send-secure + Bearer JWT</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">5. Server: verify JWT</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">6. Server: decrypt</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">7. Server: verify signature</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">8. Server: verify nonce</div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step" style="border-color:#2ea04344;color:#7bffaa;background:#1c3d2a">ACCEPT / REJECT</div>
-    </div>
-  </div>
-
-</div>
+  </main>
+</div><!-- /.app-shell -->
 
 <script src="app.js"></script>
+
+<!-- ── Cosmetic-only script ──────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Animated dot-grid background ── */
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  const SPACE  = 38;
+  let W, H;
+
+  function resizeCanvas() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function drawGrid(ts) {
+    ctx.clearRect(0, 0, W, H);
+    const t = ts / 5000;
+    for (let x = 0; x <= W + SPACE; x += SPACE) {
+      for (let y = 0; y <= H + SPACE; y += SPACE) {
+        const nx = x / W - 0.5, ny = y / H - 0.5;
+        const d  = Math.sqrt(nx * nx + ny * ny);
+        const a  = 0.18 + 0.14 * Math.sin(d * 9 - t);
+        ctx.fillStyle = `rgba(31,41,55,${a})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    requestAnimationFrame(drawGrid);
+  }
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  requestAnimationFrame(drawGrid);
+
+  /* ── Clock ── */
+  const clockEl = document.getElementById('console-time');
+  function tick() {
+    const n = new Date();
+    clockEl.textContent =
+      String(n.getHours()).padStart(2,'0') + ':' +
+      String(n.getMinutes()).padStart(2,'0') + ':' +
+      String(n.getSeconds()).padStart(2,'0');
+  }
+  setInterval(tick, 1000);
+  tick();
+
+  /* ── Event counter ── */
+  const countEl = document.getElementById('event-count');
+  let evCount   = 0;
+
+  /* ── Pipeline helpers ── */
+  const STAGES = ['pipe-jwt','pipe-aes','pipe-rsa','pipe-nonce','pipe-verdict'];
+  const CONNS  = ['conn-1','conn-2','conn-3','conn-4'];
+
+  function resetPipeline() {
+    STAGES.forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('ps-checking','ps-pass','ps-fail');
+      el.querySelector('.pipe-dot').textContent = '—';
+    });
+    CONNS.forEach(id => {
+      document.getElementById(id).classList.remove('pc-pass','pc-fail');
+    });
+  }
+
+  function setPipe(id, state, connId) {
+    const el = document.getElementById(id);
+    el.classList.remove('ps-checking','ps-pass','ps-fail');
+    if (state) el.classList.add(state);
+    el.querySelector('.pipe-dot').textContent =
+      state === 'ps-pass' ? '✓' : state === 'ps-fail' ? '✗' : state === 'ps-checking' ? '◎' : '—';
+    if (connId) {
+      const c = document.getElementById(connId);
+      c.classList.remove('pc-pass','pc-fail');
+      if (state === 'ps-pass') c.classList.add('pc-pass');
+      if (state === 'ps-fail') c.classList.add('pc-fail');
+    }
+  }
+
+  function runPipeline(steps) {
+    /* steps: [{id, conn, state}] — plays with 240ms stagger */
+    resetPipeline();
+    steps.forEach(function(s, i) {
+      setTimeout(function() { setPipe(s.id, s.state, s.conn || null); }, i * 240);
+    });
+  }
+
+  /* ── Result panel ── */
+  const rPanel  = document.getElementById('result-panel');
+  const rGlyph  = document.getElementById('result-glyph');
+  const rLabel  = document.getElementById('result-label');
+  const rDetail = document.getElementById('result-detail');
+
+  function setResult(type, glyph, label, detail) {
+    rPanel.classList.remove('st-success','st-danger','st-warning');
+    if (type) rPanel.classList.add('st-' + type);
+    rGlyph.textContent  = glyph;
+    rLabel.textContent  = label;
+    rDetail.textContent = detail;
+    rPanel.style.animation = 'none';
+    requestAnimationFrame(function() {
+      rPanel.style.animation = 'resultPop 0.35s ease both';
+    });
+  }
+
+  /* ── Tile state helpers ── */
+  const TILE_IDS = ['btn-login','btn-insecure','btn-tamper-insecure',
+                    'btn-secure','btn-tamper-signed','btn-replay'];
+
+  function setTile(id, state) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('t-running','t-accepted','t-rejected');
+    if (state) el.classList.add('t-' + state);
+    const s = el.querySelector('.tile-status');
+    if (s) s.textContent = state === 'running'  ? 'Running'  :
+                           state === 'accepted' ? 'Accepted' :
+                           state === 'rejected' ? 'Rejected' : 'Ready';
+  }
+
+  /* ── MutationObserver on #log ── */
+  let currentBtn = null;
+
+  const logEl = document.getElementById('log');
+  const obs   = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        evCount++;
+        countEl.textContent = evCount + (evCount === 1 ? ' event' : ' events');
+        const t = node.textContent || '';
+
+        /* ─ Scenario / action start ─ */
+        if (t.includes('Authenticating')) {
+          currentBtn = 'btn-login';
+          setTile('btn-login', 'running');
+          resetPipeline();
+        }
+        if (t.includes('SCENARIO 1:')) {
+          currentBtn = 'btn-insecure';
+          setTile('btn-insecure', 'running');
+          resetPipeline();
+        }
+        if (t.includes('SCENARIO 2:')) {
+          currentBtn = 'btn-tamper-insecure';
+          setTile('btn-tamper-insecure', 'running');
+          resetPipeline();
+        }
+        if (t.includes('SCENARIO 3:')) {
+          currentBtn = 'btn-secure';
+          setTile('btn-secure', 'running');
+          resetPipeline();
+          /* Start "checking" animation for all 4 crypto stages */
+          ['pipe-jwt','pipe-aes','pipe-rsa','pipe-nonce'].forEach(function(id, i) {
+            setTimeout(function() { setPipe(id, 'ps-checking', null); }, i * 160);
+          });
+        }
+        if (t.includes('SCENARIO 4:')) {
+          currentBtn = 'btn-tamper-signed';
+          setTile('btn-tamper-signed', 'running');
+          resetPipeline();
+          setTimeout(function() { setPipe('pipe-jwt', 'ps-checking', null); }, 0);
+          setTimeout(function() { setPipe('pipe-aes', 'ps-checking', null); }, 160);
+        }
+        if (t.includes('SCENARIO 5:')) {
+          currentBtn = 'btn-replay';
+          setTile('btn-replay', 'running');
+          resetPipeline();
+          ['pipe-jwt','pipe-aes','pipe-rsa','pipe-nonce'].forEach(function(id, i) {
+            setTimeout(function() { setPipe(id, 'ps-checking', null); }, i * 160);
+          });
+        }
+
+        /* ─ Outcomes ─ */
+        if (t.includes('Authentication successful')) {
+          setTile('btn-login', 'accepted');
+          setResult('success', '✓', 'AUTHENTICATED', 'JWT issued and stored');
+        }
+
+        if (t.includes('no validation was performed')) {
+          setTile(currentBtn, 'accepted');
+          setResult('warning', '⚠', 'INSECURE ACCEPTED', 'No integrity controls — data accepted without verification');
+        }
+
+        if (t.includes('modified data was accepted')) {
+          setTile('btn-tamper-insecure', 'accepted');
+          setResult('warning', '⚠', 'ATTACK SUCCEEDED', 'Tampered payload accepted — no signature check present');
+        }
+
+        if (t.includes('all verification layers passed')) {
+          setTile('btn-secure', 'accepted');
+          runPipeline([
+            {id:'pipe-jwt',     conn:'conn-1', state:'ps-pass'},
+            {id:'pipe-aes',     conn:'conn-2', state:'ps-pass'},
+            {id:'pipe-rsa',     conn:'conn-3', state:'ps-pass'},
+            {id:'pipe-nonce',   conn:'conn-4', state:'ps-pass'},
+            {id:'pipe-verdict', conn:null,     state:'ps-pass'}
+          ]);
+          setResult('success', '✓', 'REQUEST VERIFIED', 'JWT · AES-256-GCM · RSA-2048 · Nonce — all checks passed');
+        }
+
+        if (t.includes('digital signature verification process detected')) {
+          setTile('btn-tamper-signed', 'rejected');
+          runPipeline([
+            {id:'pipe-jwt',     conn:'conn-1', state:'ps-pass'},
+            {id:'pipe-aes',     conn:'conn-2', state:'ps-pass'},
+            {id:'pipe-rsa',     conn:'conn-3', state:'ps-fail'},
+            {id:'pipe-verdict', conn:null,     state:'ps-fail'}
+          ]);
+          setResult('danger', '✗', 'SIGNATURE INVALID', 'RSA-2048 signature verification failed — payload tampered');
+        }
+
+        if (t.includes('previously used nonce and rejected the replay attempt')) {
+          setTile('btn-replay', 'rejected');
+          runPipeline([
+            {id:'pipe-jwt',     conn:'conn-1', state:'ps-pass'},
+            {id:'pipe-aes',     conn:'conn-2', state:'ps-pass'},
+            {id:'pipe-rsa',     conn:'conn-3', state:'ps-pass'},
+            {id:'pipe-nonce',   conn:'conn-4', state:'ps-fail'},
+            {id:'pipe-verdict', conn:null,     state:'ps-fail'}
+          ]);
+          setResult('danger', '⊘', 'REPLAY BLOCKED', 'Nonce already recorded — duplicate request rejected');
+        }
+
+        if (t.includes('Authentication required')) {
+          setResult('danger', '✗', 'NOT AUTHENTICATED', 'Login required before running this scenario');
+        }
+
+        if (t.includes('Prerequisite not met')) {
+          setResult('danger', '✗', 'PREREQUISITE FAILED', 'Run Scenario 3 first to capture a valid request');
+        }
+
+        if (t.includes('Network error')) {
+          setResult('danger', '✗', 'CONNECTION ERROR', 'Server unreachable — ensure npm start is running');
+        }
+
+        if (t.includes('Authentication failed')) {
+          setTile('btn-login', 'rejected');
+          setResult('danger', '✗', 'AUTH FAILED', 'Invalid credentials');
+        }
+      });
+    });
+  });
+
+  obs.observe(logEl, { childList: true });
+
+  /* ── Tab switching ── */
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+}());
+</script>
 </body>
 </html>
