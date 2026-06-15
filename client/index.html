@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake Data Prevention Demo</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      color: #ffd60a;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 28px;
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 700px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    /* ── Cards ────────────────────────────────────────────── */
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    .badge-danger  { background: #3d1c1c; color: #ff7b7b; border: 1px solid #ff4444; }
+    .badge-success { background: #1c3d2a; color: #7bffaa; border: 1px solid #2ea043; }
+    .badge-info    { background: #1c2d3d; color: #7bb9ff; border: 1px solid #388bfd; }
+
+    /* ── Buttons ──────────────────────────────────────────── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:hover  { opacity: .85; }
+    .btn:active { transform: scale(.98); }
+
+    .btn-login    { background: #388bfd; color: #fff; }
+    .btn-insecure { background: #da3633; color: #fff; }
+    .btn-attack   { background: #b94e00; color: #fff; }
+    .btn-secure   { background: #2ea043; color: #fff; }
+    .btn-tamper   { background: #9333ea; color: #fff; }
+    .btn-replay   { background: #0f766e; color: #fff; }
+    .btn-clear    { background: #30363d; color: #aaa; margin-top: 4px; }
+
+    .btn-description {
+      font-size: 0.77rem;
+      color: #777;
+      margin: -6px 0 10px 0;
+      padding-left: 4px;
+    }
+
+    /* ── Token display ────────────────────────────────────── */
+    #token-display {
+      font-size: 0.75rem;
+      color: #555;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      word-break: break-all;
+      min-height: 36px;
+    }
+
+    /* ── Log panel ────────────────────────────────────────── */
+    .log-card {
+      grid-column: 1 / -1;
+    }
+
+    #log {
+      background: #010409;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 14px;
+      height: 340px;
+      overflow-y: auto;
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+    }
+
+    /* ── Theory section ───────────────────────────────────── */
+    .theory {
+      grid-column: 1 / -1;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .theory h2 {
+      color: #ffd60a;
+      margin-bottom: 14px;
+      font-size: 1rem;
+    }
+
+    .theory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .theory-item {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .theory-item h3 {
+      font-size: 0.88rem;
+      color: #ffd60a;
+      margin-bottom: 6px;
+    }
+
+    .theory-item p {
+      font-size: 0.8rem;
+      color: #9e9e9e;
+      line-height: 1.5;
+    }
+
+    /* ── Flow diagram ─────────────────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      font-size: 0.8rem;
+    }
+    .flow-step {
+      background: #1c2d3d;
+      border: 1px solid #388bfd44;
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: #7bb9ff;
+    }
+    .flow-arrow { color: #555; }
+
+    hr { border-color: #30363d; margin: 16px 0; }
+  </style>
+</head>
+<body>
+
+<h1>Fake Data Prevention Demo</h1>
+<p class="subtitle">SEC-PRJ-7E_25 · RSA-2048 Digital Signatures · AES-256-GCM Encryption · JWT Authentication · TLS · Replay Protection</p>
+
+<div class="container">
+
+  <!-- ── Step 0: Login ──────────────────────────────────── -->
+  <div class="card">
+    <h2>Step 0 — Authentication <span class="badge badge-info">JWT</span></h2>
+
+    <p id="token-display">No token yet — click Login first.</p>
+
+    <button class="btn btn-login" id="btn-login">Authenticate (demo / password123)</button>
+    <p class="btn-description">Verifies credentials via bcrypt comparison. Server issues a signed JWT (HS256) required for all protected endpoints.</p>
+  </div>
+
+  <!-- ── Vulnerable vs Secure ───────────────────────────── -->
+  <div class="card">
+    <h2>Vulnerable System <span class="badge badge-danger">NO PROTECTION</span></h2>
+
+    <button class="btn btn-insecure" id="btn-insecure">
+      1 · Send normal data (insecure)
+    </button>
+    <p class="btn-description">Sends { amount: 100 } — server accepts without any check.</p>
+
+    <button class="btn btn-attack" id="btn-tamper-insecure">
+      2 · Tamper data and send (attack)
+    </button>
+    <p class="btn-description">Sends { amount: 99999 } — server accepts without verification. Demonstrates the absence of integrity controls.</p>
+  </div>
+
+  <div class="card">
+    <h2>Secure System <span class="badge badge-success">CRYPTOGRAPHY</span></h2>
+
+    <button class="btn btn-secure" id="btn-secure">
+      3 · Send secure data (signed + encrypted)
+    </button>
+    <p class="btn-description">JWT + AES-256-GCM encryption + RSA signature. Server verifies all three.</p>
+
+    <button class="btn btn-tamper" id="btn-tamper-signed">
+      4 · Tamper signed data (rejected)
+    </button>
+    <p class="btn-description">Modifies the payload but reuses the original RSA signature — signature verification fails and the server rejects the request.</p>
+
+    <button class="btn btn-replay" id="btn-replay">
+      5 · Replay valid request (rejected)
+    </button>
+    <p class="btn-description">Retransmits Scenario 3’s exact payload — server rejects because the nonce has already been recorded.</p>
+  </div>
+
+  <!-- ── Log output ──────────────────────────────────────── -->
+  <div class="card log-card">
+    <h2>Live Demo Log
+      <button class="btn btn-clear" id="btn-clear" style="width:auto;padding:4px 12px;margin:0;float:right;">Clear</button>
+    </h2>
+    <div id="log">
+      <div style="color:#555">Waiting for demo actions…</div>
+    </div>
+  </div>
+
+  <!-- ── Theory ─────────────────────────────────────────── -->
+  <div class="theory">
+    <h2>How the Protection Works</h2>
+    <div class="theory-grid">
+
+      <div class="theory-item">
+        <h3>The Problem: Fake Data</h3>
+        <p>Without validation, any client can send arbitrary JSON.
+           An attacker can change <code>amount: 100</code> to <code>amount: 99999</code>
+           and the server has no way to detect it.</p>
+      </div>
+
+      <div class="theory-item">
+        <h3>Digital Signature (RSA)</h3>
+        <p>The sender hashes the data and encrypts the hash with a <strong>private key</strong>.
+           The server verifies using the <strong>public key</strong>.
+           Any modification — even one bit — produces a different hash → signature fails.</p>
+      </div>
+
+      <div class="theory-item">
+        <h3>Encryption (AES-256-GCM)</h3>
+        <p>Data is encrypted so it is unreadable in transit.
+           GCM mode also produces an <strong>auth tag</strong> — if ciphertext is tampered,
+           decryption throws an error before the data reaches application logic.</p>
+      </div>
+
+      <div class="theory-item">
+        <h3>JWT Authentication</h3>
+        <p>A JSON Web Token is a signed credential.
+           The server issues it on login; every protected request must carry it.
+           Expired, forged, or modified tokens are rejected at the middleware layer.</p>
+      </div>
+
+      <div class="theory-item">
+        <h3>TLS Certificate (HTTPS)</h3>
+        <p>This server runs over HTTPS using a self-signed X.509 certificate (RSA-2048).
+           TLS encrypts the transport channel, preventing passive eavesdropping of JWTs
+           and session data. All application-layer cryptography depends on this foundation.</p>
+      </div>
+
+      <div class="theory-item">
+        <h3>Replay Protection (Nonce)</h3>
+        <p>Each secure payload includes a UUID nonce embedded inside the signed and
+           encrypted body. The server records accepted nonces and rejects duplicates,
+           preventing retransmission of a previously valid captured request.</p>
+      </div>
+
+    </div>
+
+    <hr />
+
+    <p style="font-size:.82rem;color:#666;margin-bottom:8px;"><strong style="color:#aaa">Secure Request Flow</strong></p>
+    <div class="flow">
+      <div class="flow-step">1. Login → JWT</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">2. Sign data (RSA private key)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">3. Encrypt data (AES-256-GCM)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">4. POST /send-secure + Bearer JWT</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">5. Server: verify JWT</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">6. Server: decrypt</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">7. Server: verify signature</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">8. Server: verify nonce</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="border-color:#2ea04344;color:#7bffaa;background:#1c3d2a">ACCEPT / REJECT</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
