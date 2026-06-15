@@ -1,4 +1,4 @@
-const API = 'https://localhost:3000';
+const API = window.location.origin;
 
 let jwtToken          = null;
 let lastSecureRequest = null;

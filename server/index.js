@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const https   = require('https');
+const http    = require('http');
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
@@ -16,7 +17,7 @@ const PORT = 3000;
 const usedNonces = new Set();
 
 app.use(cors({
-  origin:         'https://localhost:3000',
+  origin:         true,
   methods:        ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -135,6 +136,10 @@ try {
   console.error('  openssl req -x509 -newkey rsa:2048 -keyout server/key.pem -out server/cert.pem -days 365 -nodes -subj "/CN=localhost"\n');
   process.exit(1);
 }
+
+http.createServer(app).listen(3001, '127.0.0.1', () => {
+  console.log('[ngrok] HTTP listener active on http://127.0.0.1:3001');
+});
 
 https.createServer(tlsOptions, app).listen(PORT, () => {
   console.log('╔══════════════════════════════════════════════════╗');
